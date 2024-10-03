@@ -7,37 +7,32 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User; // Ensure you import the User model
 
 class AuthController extends Controller
 {
+    // Login method
     public function login(Request $request)
     {
-        // Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email:dns',
-            'password' => 'required|min:8|max:15'
+            'password' => 'required|min:8|max:15',
         ]);
 
-        // Check if validation fails
         if ($validator->fails()) {
             Alert::error('Error', 'Pastikan semua email dan password terisi dengan benar!');
-            return redirect()->back()->withErrors($validator)->withInput(); // Add this line to redirect back with input
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        // Attempt to log in as admin
         if (Auth::guard('admin')->attempt(['email' => $request->email, 'password' => $request->password])) {
             toast('Selamat datang admin!', 'success');
             return redirect()->route('admin.dashboard');
-        } 
-        // Attempt to log in as user
-        elseif (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
+        } elseif (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
             toast('Selamat datang!', 'success');
             return redirect()->route('user.dashboard');
-        } 
-        // If login fails
-        else {
+        } else {
             Alert::error('Login Gagal!', 'Email atau password tidak valid!');
-            return redirect()->back()->withInput(); // Add this line to redirect back with input
+            return redirect()->back()->withInput();
         }
     }
 
@@ -53,36 +48,43 @@ class AuthController extends Controller
         return redirect('/');
     }
 
-    // untuk register
+    // Register method
     public function register()
     {
-        return view(register);
+        return view('register'); // Corrected view name wrapped in quotes
     }
+
+    // Post register method
     public function post_register(Request $request)
     {
-        $validator = Validator ::make($request->all(), [
+        // Validation rules
+        $validator = Validator::make($request->all(), [
             'name' => 'required',
-            'email' => 'required|email.dns',
-            'password' => 'required|min:8|max:8',
+            'email' => 'required|email:dns',
+            'password' => 'required|min:8|max:15', // Fixed validation rule to allow passwords up to 15 characters
         ]);
 
-        if ($Validator -> fails()){
-            Alert :: error('GAgal!', 'Pastikan semua terisi dengan benar');
-            return redirect()-> back();
+        // Handle validation failure
+        if ($validator->fails()) {
+            Alert::error('Gagal!', 'Pastikan semua terisi dengan benar!');
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $user = User:: create([
+        // Create a new user
+        $user = User::create([
             'name' => $request->name,
-            'email' =>$request->email,
-            'password'=> bcrypt($request->password),
-            'point' => 10000,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+            'point' => 10000, // Default points
         ]);
-        if($user){
-            Alert::succes('Berhasil!', 'Akun baru berhasil dibuat, silahkan melakukan login!');
+
+        // Check if user creation is successful
+        if ($user) {
+            Alert::success('Berhasil!', 'Akun baru berhasil dibuat, silahkan login!');
             return redirect('/');
-        } else{
-            Alert::error('Gagal!','Akun gagal dibuat, silahkan coba lagi!');
-            return redirect()->back();
+        } else {
+            Alert::error('Gagal!', 'Akun gagal dibuat, silahkan coba lagi!');
+            return redirect()->back()->withInput();
         }
     }
 }
